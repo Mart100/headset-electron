@@ -13,7 +13,8 @@ readonly cask_file='headset.rb'
 readonly submit_pr_to='homebrew:master'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
-readonly submit_pr_from="${GITHUB_USER}:${cask_branch}"
+readonly organization='headsetapp'
+readonly submit_pr_from="${headsetapp}:${cask_branch}"
 readonly installer_path="${TRAVIS_BUILD_DIR}/darwin/build/installers"
 readonly installer_file="${installer_path}/$(ls ${installer_path} | grep dmg)"
 readonly cask_version=${TRAVIS_TAG:1}
@@ -28,9 +29,9 @@ function color_message { echo -e "$(tput setaf "${1}")${2}$(tput sgr0)"; }
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
 # Checks the headset remote is listed
-if ! git remote | grep --silent "${GITHUB_USER}"; then
-  color_message "yellow" "A \`${GITHUB_USER}\` remote does not exist. Creating it now…"
-  hub fork --org="${GITHUB_USER}"
+if ! git remote | grep --silent "${headsetapp}"; then
+  color_message "yellow" "A \`${headsetapp}\` remote does not exist. Creating it now…"
+  hub fork --org="${headsetapp}"
 fi
 
 # Create branch or checkout if it already exists
@@ -65,14 +66,14 @@ fi
 
 # Commits and pushes
 git commit "${cask_file}" --message "${commit_message}" --quiet
-git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+git push --force "${headsetapp}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
 # Checks if 'git push' had any errors and attempts to fix "shallow update" error
 if [[ "${?}" -ne 0 ]]; then
   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
     color_message "yellow" 'Push failed due to shallow repo. Unshallowing…'
     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
-    git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+    git push --force "${headsetapp}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
     if [[ "${?}" -ne 0 ]]; then
       color_message "red" "'There were errors while pushing:'\n$(< "${submission_error_log}")"
