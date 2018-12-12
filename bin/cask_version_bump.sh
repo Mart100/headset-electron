@@ -22,8 +22,8 @@ readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\
 readonly submission_error_log="$(mktemp)"
 
 # Enable Git credential store
-git config credential.helper store
-echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
+# git config credential.helper store
+# echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
 
 # Move to the working directory
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
@@ -31,7 +31,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Adding it now…"
-  git remote add "${organization}" "https://github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
+  git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
 fi
 
 # Create branch or checkout if it already exists
@@ -71,7 +71,8 @@ git log -1 --stat
 echo '--------------------'
 git status
 echo '--------------------'
-git push --force "${organization}" "${cask_branch}" --quiet
+git push --force "${organization}" "${cask_branch}" --quiet > /dev/null
+echo 'Pushed'
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
