@@ -64,6 +64,13 @@ fi
 
 # Commits and pushes
 git commit "${cask_file}" --message "${commit_message}"
+echo '--------------------'
+git log -1 --stat
+echo '--------------------'
+git remote -v
+echo '--------------------'
+git status
+echo '--------------------'
 git push --force --verbose "${organization}" "${cask_branch}"
 
 # Submits the PR and gets a link to it
