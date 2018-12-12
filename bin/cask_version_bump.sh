@@ -9,11 +9,10 @@
 set -ex
 
 # Useful variables
+readonly organization='headsetapp'
 readonly cask_file='headset.rb'
-readonly submit_pr_to='homebrew:master'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
-readonly organization='headsetapp'
 readonly submit_pr_from="${organization}:${cask_branch}"
 readonly installer_path="${TRAVIS_BUILD_DIR}/darwin/build/installers"
 readonly installer_file="${installer_path}/$(ls ${installer_path} | grep dmg)"
@@ -21,7 +20,6 @@ readonly cask_version=${TRAVIS_TAG:1}
 readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 readonly submission_error_log="$(mktemp)"
-readonly divide=$(hr -)
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
@@ -35,11 +33,11 @@ fi
 git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" || git checkout -b "${cask_branch}"
 
 # Prints the current cask file
-echo -e "\n${divide}"
+echo '--------------------'
 echo "Current Headset cask file:"
-echo "${divide}"
+echo '--------------------'
 cat "${cask_file}"
-echo "${divide}"
+echo '--------------------'
 
 # Calculates the sha256 sum of the .dmg file
 package_sha=$(shasum --algorithm 256 "${installer_file}" | awk '{ print $1 }')
@@ -49,9 +47,9 @@ sed -i.bak "s|version .*|version '${cask_version}'|" "${cask_file}"
 sed -i.bak "s|sha256 .*|sha256 '${package_sha}'|" "${cask_file}"
 rm "${cask_file}.bak"
 
-echo -e "\n${divide}"
+echo -e '\n--------------------'
 git --no-pager diff # Displays the difference between files
-echo "${divide}"
+echo '--------------------'
 
 # Error if no changes were made, submit otherwise
 if git diff-index --quiet HEAD --; then
@@ -63,27 +61,27 @@ fi
 
 # Commits and pushes
 git commit "${cask_file}" --message "${commit_message}"
-git push --force "${organization}" "${cask_branch}" 2> "${submission_error_log}"
+git push --force "${organization}" "${cask_branch}"
 
-# Checks if 'git push' had any errors and attempts to fix "shallow update" error
-if [[ "${?}" -ne 0 ]]; then
-  if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
-    echo 'Push failed due to shallow repo. Unshallowing…'
-    HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
-    git push --force "${organization}" "${cask_branch}" 2> "${submission_error_log}"
+# # Checks if 'git push' had any errors and attempts to fix "shallow update" error
+# if [[ "${?}" -ne 0 ]]; then
+#   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
+#     echo 'Push failed due to shallow repo. Unshallowing…'
+#     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
+#     git push --force "${organization}" "${cask_branch}" 2> "${submission_error_log}"
 
-    if [[ "${?}" -ne 0 ]]; then
-      echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
-      exit 3
-    fi
-  else
-    echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
-    exit 3
-  fi
-fi
+#     if [[ "${?}" -ne 0 ]]; then
+#       echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+#       exit 3
+#     fi
+#   else
+#     echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+#     exit 3
+#   fi
+# fi
 
 # Submits the PR and gets a link to it
-pr_link=$(hub pull-request -b "${submit_pr_to}" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
+pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
 
 if [[ -n "${pr_link}" ]]; then
   echo -e "\nSubmitted (${pr_link})\n"

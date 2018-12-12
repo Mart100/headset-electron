@@ -14,7 +14,6 @@ addons:
   homebrew:
     packages:
     - hub
-    - hr
   apt:
     packages:
     - fakeroot
