@@ -9,8 +9,6 @@ git:
   depth: 1
 
 addons:
-  ssh_known_hosts:
-    - github.com
   homebrew:
     packages:
     - hub

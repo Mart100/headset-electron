@@ -29,7 +29,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Creating it now…"
-  hub fork --org="${organization}"
+  git remote add "${organization}" "https://github.com/${organization}/homebrew-cask.git"
 fi
 
 # Create branch or checkout if it already exists
