@@ -21,17 +21,13 @@ readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 readonly submission_error_log="$(mktemp)"
 
-# Enable Git credential store
-git config credential.helper store
-echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}"/.git-credentials
-
 # Move to the working directory
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Adding it now…"
-  git remote add "${organization}" "https://github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
+  git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
 fi
 
 # Create branch or checkout if it already exists
