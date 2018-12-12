@@ -35,7 +35,7 @@ if ! git remote | grep --silent "${headsetapp}"; then
 fi
 
 # Create branch or checkout if it already exists
-git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" --quiet || git checkout -b "${cask_branch}" --quiet
+git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" || git checkout -b "${cask_branch}"
 
 # Prints the current cask file
 echo -e "\n${divide}"
@@ -65,15 +65,15 @@ else
 fi
 
 # Commits and pushes
-git commit "${cask_file}" --message "${commit_message}" --quiet
-git push --force "${headsetapp}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+git commit "${cask_file}" --message "${commit_message}"
+git push --force "${headsetapp}" "${cask_branch}" 2> "${submission_error_log}"
 
 # Checks if 'git push' had any errors and attempts to fix "shallow update" error
 if [[ "${?}" -ne 0 ]]; then
   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
     color_message "yellow" 'Push failed due to shallow repo. Unshallowing…'
     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
-    git push --force "${headsetapp}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+    git push --force "${headsetapp}" "${cask_branch}" 2> "${submission_error_log}"
 
     if [[ "${?}" -ne 0 ]]; then
       color_message "red" "'There were errors while pushing:'\n$(< "${submission_error_log}")"
