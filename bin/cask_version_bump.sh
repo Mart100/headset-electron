@@ -22,8 +22,8 @@ readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\
 readonly submission_error_log="$(mktemp)"
 
 # Enable Git credential store
-git config --global credential.helper store
-echo "https://${GIHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}"/.git-credentials
+echo "https://${GIHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
+git config credential.helper "store --file=${HOME}/.git-credentials"
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
