@@ -9,7 +9,7 @@
 set -e
 
 # Useful variables
-readonly organization='danielravina'
+readonly organization='headsetapp'
 readonly cask_file='headset.rb'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
@@ -22,8 +22,8 @@ readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\
 readonly submission_error_log="$(mktemp)"
 
 # Enable Git credential store
-# git config credential.helper store
-# echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
+git config credential.helper store
+echo "https://${GITHUB_TOKEN}:x-oauth-basic@github.com" > "${HOME}"/.git-credentials
 
 # Move to the working directory
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
@@ -31,7 +31,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Adding it now…"
-  git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
+  git remote add "${organization}" "https://github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
 fi
 
 # Create branch or checkout if it already exists
