@@ -19,14 +19,10 @@ readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 readonly submission_error_log="$(mktemp)"
 
-# Move to the working directory
+# Setting up repo
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
-
-# Checks the headset remote is listed
-if ! git remote | grep --silent "${organization}"; then
-  echo -e "A \`${organization}\` remote does not exist. Adding it now…"
-  git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
-fi
+git fetch --unshallow origin 2> /dev/null || echo "Repo already unshallow"
+git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1 && echo "Added ${organization} remote"
 
 # Create branch or checkout if it already exists
 git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" || git checkout -b "${cask_branch}"
@@ -68,17 +64,19 @@ echo '--------------------'
 git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
 # Fix common push errors
-if [[ "${?}" -ne 0 ]]; then
-  if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
-    echo 'Push failed due to shallow repo. Unshallowing…'
-    HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename "$(git remote get-url origin)" '.git')"
-    git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+# if [[ "${?}" -ne 0 ]]; then
+#   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
+#     echo 'Push failed due to shallow repo. Unshallowing…'
+#     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename "$(git remote get-url origin)" '.git')"
+#     git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
-    if [[ "${?}" -ne 0 ]]; then echo -e "$(< "${submission_error_log}")"; exit 3; fi
-  else
-    echo -e "$(< "${submission_error_log}")"; exit 3
-  fi
-fi
+#     if [[ "${?}" -ne 0 ]]; then echo -e "$(< "${submission_error_log}")"; exit 3; fi
+#   else
+#     echo -e "$(< "${submission_error_log}")"; exit 3
+#   fi
+# fi
+
+exit 0
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
