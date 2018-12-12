@@ -1,38 +1,35 @@
 #!/usr/bin/env bash
 
-# Script based on https://github.com/vitorgalvao/tiny-scripts/blob/master/cask-repair
+# Script based on https://github.com/leipert/jetbrains-cask-bot/blob/master/jetbrains-cask-bot.sh
+#  and https://github.com/vitorgalvao/tiny-scripts/blob/master/cask-repair
 #
 # It's basically the same procedure, making it more specific to Headset with the biggest change being that the .dmg file
-# is not downloaded from a URL but rather, the .dmg built by Travis is used.
+# is not downloaded from a URL but rather we use the .dmg built by Travis
 #
 
 # Useful variables
 readonly organization='headsetapp'
 readonly cask_file='headset.rb'
-readonly cask_branch='cask_repair_update-headset'
+readonly cask_branch='test-cask_repair_update-headset' # TODO: remove test- prefix, right now a PR is out there
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
 readonly submit_pr_from="${organization}:${cask_branch}"
 readonly installer_path="${TRAVIS_BUILD_DIR}/darwin/build/installers"
-readonly installer_file="${installer_path}/$(ls ${installer_path} | grep dmg)"
+readonly installer_file="${installer_path}/$(ls "${installer_path}" | grep dmg)"
 readonly cask_version=${TRAVIS_TAG:1}
 readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
-readonly submission_error_log="$(mktemp)"
 
-# Setting up repo
+# Setting up the repo
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 git fetch --unshallow origin 2> /dev/null || echo "Repo already unshallow"
 git remote add "${organization}" "https://${GITHUB_TOKEN}@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1 && echo "Added ${organization} remote"
 
 # Create branch or checkout if it already exists
-git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" || git checkout -b "${cask_branch}"
-
-# Prints the current cask file
-echo '--------------------'
-echo "Current Headset cask file:"
-echo '--------------------'
-cat "${cask_file}"
-echo '--------------------'
+if git rev-parse --verify "${cask_branch}" &>/dev/null; then
+  git checkout "${cask_branch}"
+else
+  git checkout -b "${cask_branch}"
+fi
 
 # Calculates the sha256 sum of the .dmg file
 package_sha=$(shasum --algorithm 256 "${installer_file}" | awk '{ print $1 }')
@@ -48,34 +45,18 @@ echo '--------------------'
 
 # Error if no changes were made, submit otherwise
 if git diff-index --quiet HEAD --; then
-  echo 'No changes made to the cask. Exiting...'
-  exit 2
+  echo 'No changes made to the cask. Exiting...' && exit 2
 else
   echo 'Submitting…'
 fi
 
 # Commits and pushes
-git commit "${cask_file}" --message "${commit_message}"
-echo '--------------------'
-git log -1 --stat
-echo '--------------------'
-git status
-echo '--------------------'
-git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+git commit "${cask_file}" --message "${commit_message}" --quiet
+if ! git push --force "${organization}" "${cask_branch}" --quiet; then
+  echo 'Push failed' && exit 3
+fi
 
-# Fix common push errors
-# if [[ "${?}" -ne 0 ]]; then
-#   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
-#     echo 'Push failed due to shallow repo. Unshallowing…'
-#     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename "$(git remote get-url origin)" '.git')"
-#     git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
-
-#     if [[ "${?}" -ne 0 ]]; then echo -e "$(< "${submission_error_log}")"; exit 3; fi
-#   else
-#     echo -e "$(< "${submission_error_log}")"; exit 3
-#   fi
-# fi
-
+# TODO: remove the exit so PR can be submitted. At the moment, we're testing the script
 exit 0
 
 # Submits the PR and gets a link to it
@@ -84,6 +65,5 @@ pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(ech
 if [[ -n "${pr_link}" ]]; then
   echo -e "\nSubmitted (${pr_link})\n"
 else
-  echo -e 'There was an error submitting the pull request. Please open a bug report on the repo for this script (https://github.com/vitorgalvao/tiny-scripts).'
-  exit 4
+  echo -e 'There was an error submitting the pull request' && exit 4
 fi
