@@ -21,6 +21,9 @@ readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 readonly submission_error_log="$(mktemp)"
 
+# Test GITHUB_TOKEN exists
+[[ -z ${GITHUB_TOKEN} ]] && echo "Github token not set" && exit 1
+
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
 # Checks the headset remote is listed
