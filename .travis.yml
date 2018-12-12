@@ -9,6 +9,8 @@ git:
   depth: 1
 
 addons:
+  ssh_known_hosts:
+    - github.com
   homebrew:
     packages:
     - hub
@@ -57,7 +59,6 @@ after_success:
   fi
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     ./bin/cask_version_bump.sh;
-    exit 1;
   fi
 
 deploy:
