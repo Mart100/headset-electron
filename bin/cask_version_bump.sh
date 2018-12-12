@@ -22,7 +22,7 @@ readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\
 readonly submission_error_log="$(mktemp)"
 
 # Enable Git credential store
-# echo "https://${GIHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
+# echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
 # git config credential.helper "store --file=${HOME}/.git-credentials"
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
@@ -30,7 +30,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Adding it now…"
-  git remote add "${organization}" "https://${GIHUB_TOKEN}:x-oauth-basic@github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
+  git remote add "${organization}" "https://github.com/${organization}/homebrew-cask.git" > /dev/null 2>&1
 fi
 
 # Create branch or checkout if it already exists
