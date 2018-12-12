@@ -5,7 +5,7 @@
 # It's basically the same procedure, making it more specific to Headset with the biggest change being that the .dmg file
 # is not downloaded from a URL but rather, the .dmg built by Travis is used.
 
-set -v
+set -x
 
 # Useful variables
 readonly cask_file='headset.rb'
@@ -22,7 +22,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${GITHUB_USER}"; then
   echo "A \`${GITHUB_USER}\` remote does not exist. Creating it now…"
-  hub fork
+  hub fork --org="${GITHUB_USER}"
 fi
 
 # Create branch or checkout if it already exists
@@ -46,14 +46,14 @@ commit_message="Update headset to ${cask_version}"
 pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 
 git commit "${cask_file}" --message "${commit_message}" --quiet
-git push --force "headsetapp" "${cask_branch}" --quiet 2> "${submission_error_log}"
+git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
 # Checks if 'git push' had any errors and attempts to fix shallow-repo error
 if [[ "${?}" -ne 0 ]]; then
   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
     echo 'Push failed due to shallow repo. Unshallowing…'
     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
-    git push --force "headsetapp" "${cask_branch}" --quiet 2> "${submission_error_log}"
+    git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
     [[ "${?}" -ne 0 ]] && echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
   else
