@@ -9,7 +9,7 @@
 set -ex
 
 # Useful variables
-readonly organization='danielravina'
+readonly organization='headsetapp'
 readonly cask_file='headset.rb'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
@@ -29,7 +29,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Creating it now…"
-  hub fork
+  hub fork --org="${organization}"
 fi
 
 # Create branch or checkout if it already exists
@@ -64,7 +64,7 @@ fi
 
 # Commits and pushes
 git commit "${cask_file}" --message "${commit_message}"
-git push --force "${organization}" "${cask_branch}"
+git push --force --verbose "${organization}" "${cask_branch}"
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
