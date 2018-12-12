@@ -9,7 +9,7 @@
 set -ex
 
 # Useful variables
-readonly organization='headsetapp'
+readonly organization='danielravina'
 readonly cask_file='headset.rb'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
@@ -26,7 +26,7 @@ cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${organization}"; then
   echo -e "A \`${organization}\` remote does not exist. Creating it now…"
-  hub fork --org="${organization}"
+  hub fork
 fi
 
 # Create branch or checkout if it already exists
@@ -62,23 +62,6 @@ fi
 # Commits and pushes
 git commit "${cask_file}" --message "${commit_message}"
 git push --force "${organization}" "${cask_branch}"
-
-# # Checks if 'git push' had any errors and attempts to fix "shallow update" error
-# if [[ "${?}" -ne 0 ]]; then
-#   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
-#     echo 'Push failed due to shallow repo. Unshallowing…'
-#     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
-#     git push --force "${organization}" "${cask_branch}" 2> "${submission_error_log}"
-
-#     if [[ "${?}" -ne 0 ]]; then
-#       echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
-#       exit 3
-#     fi
-#   else
-#     echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
-#     exit 3
-#   fi
-# fi
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
