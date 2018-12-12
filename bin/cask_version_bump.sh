@@ -6,6 +6,8 @@
 # is not downloaded from a URL but rather, the .dmg built by Travis is used.
 #
 
+set -ex
+
 # Useful variables
 readonly cask_file='headset.rb'
 readonly submit_pr_to='homebrew:master'
