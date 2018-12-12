@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
-set -e
+set -ev
 
 cd "$(brew --repository)"/Library/Taps/Homebrew/homebrew-cask
+echo
+pwd
+echo
