@@ -4,6 +4,7 @@
 #
 # It's basically the same procedure, making it more specific to Headset with the biggest change being that the .dmg file
 # is not downloaded from a URL but rather, the .dmg built by Travis is used.
+#
 
 # Useful variables
 readonly cask_file='headset.rb'
@@ -11,16 +12,23 @@ readonly submit_pr_to='homebrew:master'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
 readonly submit_pr_from="${GITHUB_USER}:${cask_branch}"
-readonly installer_file="darwin/build/installers/*.dmg"
+readonly installer_file="${TRAVIS_BUILD_DIR}/darwin/build/installers/*.dmg"
 readonly cask_version=${TRAVIS_TAG:1}
+readonly commit_message="Update headset to ${cask_version}"
+readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
 readonly submission_error_log="$(mktemp)"
-readonly divide=$(command -v 'hr' &>/dev/null && hr - || echo '--------------------')
+readonly divide=$(hr -)
+
+# Function for color output, first argument is color, second is the message
+function color_message {
+  echo -e "$(tput setaf "${1}")${2}$(tput sgr0)"
+}
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
 # Checks the headset remote is listed
 if ! git remote | grep --silent "${GITHUB_USER}"; then
-  echo "A \`${GITHUB_USER}\` remote does not exist. Creating it now…"
+  color_message "yellow" "A \`${GITHUB_USER}\` remote does not exist. Creating it now…"
   hub fork --org="${GITHUB_USER}"
 fi
 
@@ -28,6 +36,8 @@ fi
 git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" --quiet || git checkout -b "${cask_branch}" --quiet
 
 # Prints the current cask file
+echo -e "\n${divide}"
+color_message "cyan" "Current Headset cask file:"
 echo "${divide}"
 cat "${cask_file}"
 echo "${divide}"
@@ -40,28 +50,36 @@ sed -i.bak "s|version .*|version '${cask_version}'|" "${cask_file}"
 sed -i.bak "s|sha256 .*|sha256 '${package_sha}'|" "${cask_file}"
 rm "${cask_file}.bak"
 
-echo "${divide}"
-git --no-pager diff # Displays the difference between files
+echo -e "\n${divide}"
+color_message "bold" "$(git --no-pager diff)" # Displays the difference between files
 echo "${divide}"
 
-# Submits the changes as a new PR
-echo 'Submitting…'
-commit_message="Update headset to ${cask_version}"
-pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
+# Error if no changes were made, submit otherwise
+if git diff-index --quiet HEAD --; then
+  color_message "red" 'No changes made to the cask. Exiting...'
+  exit 2
+else
+  echo 'Submitting…'
+fi
 
+# Commits and pushes
 git commit "${cask_file}" --message "${commit_message}" --quiet
 git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
-# Checks if 'git push' had any errors and attempts to fix shallow-repo error
+# Checks if 'git push' had any errors and attempts to fix "shallow update" error
 if [[ "${?}" -ne 0 ]]; then
   if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
-    echo 'Push failed due to shallow repo. Unshallowing…'
+    color_message "yellow" 'Push failed due to shallow repo. Unshallowing…'
     HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename $(git remote get-url origin) '.git')"
     git push --force "${GITHUB_USER}" "${cask_branch}" --quiet 2> "${submission_error_log}"
 
-    [[ "${?}" -ne 0 ]] && echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+    if [[ "${?}" -ne 0 ]]; then
+      color_message "red" "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+      exit 3
+    fi
   else
-    echo -e "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+    color_message "red" "'There were errors while pushing:'\n$(< "${submission_error_log}")"
+    exit 3
   fi
 fi
 
@@ -69,19 +87,8 @@ fi
 pr_link=$(hub pull-request -b "${submit_pr_to}" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
 
 if [[ -n "${pr_link}" ]]; then
-  echo -e "\nSubmitted (${pr_link})\n"
-
-  # CLEANS EVERYTHING PREVIOUSLY DONE
-
-  # Do not try to clean if not in a tap dir (e.g. if script was manually aborted too fast)
-  [[ "$(dirname "$(dirname "${PWD}")")" == "${caskroom_taps_dir}" ]] || return
-
-  current_branch="$(git rev-parse --abbrev-ref HEAD)"
-
-  git reset HEAD --hard --quiet
-  git checkout master --quiet
-  git branch -D "${current_branch}" --quiet
-  rm "${submission_error_log}"
+  color_message "green" "\nSubmitted (${pr_link})\n"
 else
-  abort 'There was an error submitting the pull request. Please open a bug report on the repo for this script (https://github.com/vitorgalvao/tiny-scripts).'
+  color_message "red" 'There was an error submitting the pull request. Please open a bug report on the repo for this script (https://github.com/vitorgalvao/tiny-scripts).'
+  exit 4
 fi
