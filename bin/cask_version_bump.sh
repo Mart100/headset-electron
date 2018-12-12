@@ -6,8 +6,6 @@
 # is not downloaded from a URL but rather, the .dmg built by Travis is used.
 #
 
-set -e
-
 # Useful variables
 readonly organization='headsetapp'
 readonly cask_file='headset.rb'
@@ -67,8 +65,20 @@ git log -1 --stat
 echo '--------------------'
 git status
 echo '--------------------'
-git push --force "${organization}" "${cask_branch}" --quiet > /dev/null
-echo 'Pushed'
+git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+
+# Fix common push errors
+if [[ "${?}" -ne 0 ]]; then
+  if grep --quiet 'shallow update not allowed' "${submission_error_log}"; then
+    echo 'Push failed due to shallow repo. Unshallowing…'
+    HOMEBREW_NO_AUTO_UPDATE=1 brew tap --full "homebrew/$(basename "$(git remote get-url origin)" '.git')"
+    git push --force "${organization}" "${cask_branch}" --quiet 2> "${submission_error_log}"
+
+    if [[ "${?}" -ne 0 ]]; then echo -e "$(< "${submission_error_log}")"; exit 3; fi
+  else
+    echo -e "$(< "${submission_error_log}")"; exit 3
+  fi
+fi
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
