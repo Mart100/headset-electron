@@ -22,9 +22,10 @@ readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\
 readonly submission_error_log="$(mktemp)"
 
 # Enable Git credential store
-# echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
-# git config credential.helper "store --file=${HOME}/.git-credentials"
+git config credential.helper store
+echo "https://${GITHUB_TOKEN}:@github.com" > "${HOME}"/.git-credentials
 
+# Move to the working directory
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
 # Checks the headset remote is listed
@@ -70,7 +71,7 @@ git log -1 --stat
 echo '--------------------'
 git status
 echo '--------------------'
-git push --force "${organization}" "${cask_branch}"
+git push --force "${organization}" "${cask_branch}" --quiet
 
 # Submits the PR and gets a link to it
 pr_link=$(hub pull-request -b "homebrew:master" -h "${submit_pr_from}" -m "$(echo -e "${pr_message}")")
