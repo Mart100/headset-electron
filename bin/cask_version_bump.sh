@@ -9,7 +9,7 @@
 set -e
 
 # Useful variables
-readonly organization='headsetapp'
+readonly organization='danielravina'
 readonly cask_file='headset.rb'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
