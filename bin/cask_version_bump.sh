@@ -12,7 +12,8 @@ readonly submit_pr_to='homebrew:master'
 readonly cask_branch='cask_repair_update-headset'
 readonly caskroom_taps_dir="$(brew --repository)/Library/Taps/homebrew"
 readonly submit_pr_from="${GITHUB_USER}:${cask_branch}"
-readonly installer_file="${TRAVIS_BUILD_DIR}/darwin/build/installers/*.dmg"
+readonly installer_path="${TRAVIS_BUILD_DIR}/darwin/build/installers"
+readonly installer_file="${installer_path}/$(ls ${installer_path} | grep dmg)"
 readonly cask_version=${TRAVIS_TAG:1}
 readonly commit_message="Update headset to ${cask_version}"
 readonly pr_message="${commit_message}\n\nAfter making all changes to the cask:\n\n- [x] \`brew cask audit --download {{cask_file}}\` is error-free.\n- [x] \`brew cask style --fix {{cask_file}}\` left no offenses.\n- [x] The commit message includes the cask’s name and version."
@@ -20,9 +21,7 @@ readonly submission_error_log="$(mktemp)"
 readonly divide=$(hr -)
 
 # Function for color output, first argument is color, second is the message
-function color_message {
-  echo -e "$(tput setaf "${1}")${2}$(tput sgr0)"
-}
+function color_message { echo -e "$(tput setaf "${1}")${2}$(tput sgr0)"; }
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
