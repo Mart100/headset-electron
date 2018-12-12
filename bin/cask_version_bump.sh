@@ -5,8 +5,6 @@
 # It's basically the same procedure, making it more specific to Headset with the biggest change being that the .dmg file
 # is not downloaded from a URL but rather, the .dmg built by Travis is used.
 
-set -x
-
 # Useful variables
 readonly cask_file='headset.rb'
 readonly submit_pr_to='homebrew:master'
@@ -16,6 +14,7 @@ readonly submit_pr_from="${GITHUB_USER}:${cask_branch}"
 readonly installer_file="darwin/build/installers/*.dmg"
 readonly cask_version=${TRAVIS_TAG:1}
 readonly submission_error_log="$(mktemp)"
+readonly divide=$(command -v 'hr' &>/dev/null && hr - || echo '--------------------')
 
 cd "${caskroom_taps_dir}"/homebrew-cask/Casks || exit 1
 
@@ -28,6 +27,11 @@ fi
 # Create branch or checkout if it already exists
 git rev-parse --verify "${cask_branch}" &>/dev/null && git checkout "${cask_branch}" --quiet || git checkout -b "${cask_branch}" --quiet
 
+# Prints the current cask file
+echo "${divide}"
+cat "${cask_file}"
+echo "${divide}"
+
 # Calculates the sha256 sum of the .dmg file
 package_sha=$(shasum --algorithm 256 "${installer_file}" | awk '{ print $1 }')
 
@@ -36,9 +40,9 @@ sed -i.bak "s|version .*|version '${cask_version}'|" "${cask_file}"
 sed -i.bak "s|sha256 .*|sha256 '${package_sha}'|" "${cask_file}"
 rm "${cask_file}.bak"
 
-echo "------------------------"
+echo "${divide}"
 git --no-pager diff # Displays the difference between files
-echo "------------------------"
+echo "${divide}"
 
 # Submits the changes as a new PR
 echo 'Submitting…'

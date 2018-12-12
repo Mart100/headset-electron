@@ -3,7 +3,6 @@ language: node_js
 node_js: "8"
 
 os:
-  - linux
   - osx
 
 git:
@@ -23,13 +22,6 @@ addons:
     - libglib2.0-dev
     - reprepro
     - createrepo
-
-before_install:
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then exit 1; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    ./bin/cask_version_bump.sh;
-    exit 1;
-  fi
 
 install:
 - npm ci
@@ -61,6 +53,10 @@ after_success:
     openssl aes-256-cbc -K $encrypted_6866d25ad40b_key -iv $encrypted_6866d25ad40b_iv -in sig/headset_priv.asc.enc -out headset_priv.asc -d;
     npm run repo;
     cd ..;
+  fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    ./bin/cask_version_bump.sh;
+    exit 1;
   fi
 
 deploy:
